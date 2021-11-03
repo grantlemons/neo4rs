@@ -14,7 +14,7 @@ impl<A: TryFrom<BoltType>> TryFrom<BoltType> for Vec<A> {
                                     .flat_map(|x| A::try_from(x.clone()))
                                     .collect()
                                     ),
-            _ => Err(Error::ConverstionError),
+            _ => Err(Error::ConvertError(input)),
         }
     }
 }
