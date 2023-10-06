@@ -1,5 +1,6 @@
 use crate::types::*;
 use std::convert::TryInto;
+use std::sync::Arc;
 
 /// Represents a row returned as a result of executing a query.
 ///
@@ -160,7 +161,7 @@ impl Relation {
         self.inner.end_node_id.value
     }
 
-    pub fn typ(&self) -> String {
+    pub fn typ(&self) -> Arc<str> {
         self.inner.typ.value.clone()
     }
 
@@ -178,7 +179,7 @@ impl UnboundedRelation {
         self.inner.id.value
     }
 
-    pub fn typ(&self) -> String {
+    pub fn typ(&self) -> Arc<str> {
         self.inner.typ.value.clone()
     }
 

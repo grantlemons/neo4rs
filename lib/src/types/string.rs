@@ -5,7 +5,9 @@ use std::cell::RefCell;
 use std::convert::From;
 use std::fmt::Display;
 use std::mem;
+use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::Arc;
 
 pub const TINY: u8 = 0x80;
 pub const SMALL: u8 = 0xD0;
@@ -14,13 +16,13 @@ pub const LARGE: u8 = 0xD2;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct BoltString {
-    pub value: String,
+    pub value: Arc<str>,
 }
 
 impl BoltString {
-    pub fn new(value: &str) -> Self {
+    pub fn new<T: Into<Arc<str>>>(value: T) -> Self {
         BoltString {
-            value: value.to_string(),
+            value: value.into(),
         }
     }
 
@@ -47,12 +49,24 @@ impl From<&str> for BoltString {
 
 impl From<String> for BoltString {
     fn from(v: String) -> Self {
-        BoltString::new(&v)
+        BoltString::new(v)
+    }
+}
+
+impl From<Arc<str>> for BoltString {
+    fn from(value: Arc<str>) -> Self {
+        BoltString::new(value)
     }
 }
 
 impl Into<String> for BoltString {
     fn into(self) -> String {
+        self.value.deref().to_owned()
+    }
+}
+
+impl Into<Arc<str>> for BoltString {
+    fn into(self) -> Arc<str> {
         self.value
     }
 }
@@ -98,8 +112,8 @@ impl BoltString {
             }
         };
         let byte_array = input.split_to(length).to_vec();
-        let string_value = std::string::String::from_utf8(byte_array)
-            .map_err(Error::DeserializationError)?;
+        let string_value =
+            std::string::String::from_utf8(byte_array).map_err(Error::DeserializationError)?;
         Ok(string_value.into())
     }
 }
@@ -138,7 +152,7 @@ mod tests {
 
     #[test]
     fn should_serialize_small_string() {
-        let s = BoltString::new(&"a".repeat(16));
+        let s = BoltString::new("a".repeat(16));
 
         let mut b: Bytes = s.into_bytes(Version::V4_1).unwrap();
 
@@ -159,7 +173,7 @@ mod tests {
 
     #[test]
     fn should_serialize_medium_string() {
-        let s = BoltString::new(&"a".repeat(256));
+        let s = BoltString::new("a".repeat(256));
 
         let mut b: Bytes = s.into_bytes(Version::V4_1).unwrap();
 
@@ -182,7 +196,7 @@ mod tests {
 
     #[test]
     fn should_serialize_large_string() {
-        let s = BoltString::new(&"a".repeat(65_536));
+        let s = BoltString::new("a".repeat(65_536));
 
         let mut b: Bytes = s.into_bytes(Version::V4_1).unwrap();
 

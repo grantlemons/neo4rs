@@ -147,6 +147,8 @@ impl Into<Vec<BoltType>> for BoltList {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use super::*;
 
     #[test]
@@ -177,7 +179,7 @@ mod tests {
 
         assert_eq!(bolt_list.len(), 2);
         match bolt_list.get(0).unwrap() {
-            BoltType::String(s) => assert_eq!(s.value, "a"),
+            BoltType::String(s) => assert_eq!(s.value.deref(), "a"),
             _ => unreachable!("error deserialiisation of string in list"),
         }
 

@@ -2,18 +2,20 @@ use crate::errors::*;
 use crate::row::*;
 use crate::types::*;
 use std::convert::{TryFrom, TryInto};
+use std::ops::Deref;
+use std::sync::Arc;
 
 impl<A: TryFrom<BoltType>> TryFrom<BoltType> for Vec<A> {
     type Error = Error;
 
     fn try_from(input: BoltType) -> Result<Vec<A>> {
         match input {
-            BoltType::List(l) => Ok(l.value
-                                    .to_vec()
-                                    .iter()
-                                    .flat_map(|x| A::try_from(x.clone()))
-                                    .collect()
-                                    ),
+            BoltType::List(l) => Ok(l
+                .value
+                .to_vec()
+                .iter()
+                .flat_map(|x| A::try_from(x.clone()))
+                .collect()),
             _ => Err(Error::ConvertError(input)),
         }
     }
@@ -227,6 +229,16 @@ impl TryFrom<BoltType> for String {
     type Error = Error;
     fn try_from(input: BoltType) -> Result<String> {
         match input {
+            BoltType::String(t) => Ok(t.value.deref().to_owned()),
+            _ => Err(Error::ConvertError(input)),
+        }
+    }
+}
+
+impl TryFrom<BoltType> for Arc<str> {
+    type Error = Error;
+    fn try_from(input: BoltType) -> Result<Self> {
+        match input {
             BoltType::String(t) => Ok(t.value),
             _ => Err(Error::ConvertError(input)),
         }
@@ -278,10 +290,16 @@ impl Into<BoltType> for (chrono::NaiveDateTime, &str) {
 impl<A: Into<BoltType> + Clone> Into<BoltType> for Vec<A> {
     fn into(self) -> BoltType {
         BoltType::List(BoltList {
-            value: self
-                .iter()
-                .map(|v| v.clone().into())
-                .collect()})
+            value: self.iter().map(|v| v.clone().into()).collect(),
+        })
+    }
+}
+
+impl<A: Into<BoltType> + Clone> Into<BoltType> for Arc<[A]> {
+    fn into(self) -> BoltType {
+        BoltType::List(BoltList {
+            value: self.iter().map(|v| v.clone().into()).collect(),
+        })
     }
 }
 
@@ -304,6 +322,12 @@ impl Into<BoltType> for i64 {
 }
 
 impl Into<BoltType> for String {
+    fn into(self) -> BoltType {
+        BoltType::String(self.into())
+    }
+}
+
+impl Into<BoltType> for Arc<str> {
     fn into(self) -> BoltType {
         BoltType::String(self.into())
     }
